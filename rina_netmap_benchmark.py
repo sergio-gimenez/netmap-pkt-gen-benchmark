@@ -1,3 +1,4 @@
+import argparse
 import subprocess
 import re
 import csv
@@ -104,18 +105,32 @@ def draw_plots_in_pdf(packets_per_sec_data, speed_units, throughput_data, throug
     plt.savefig('pkt_gen_plots.pdf', format='pdf')
 
 
-def main():
-    total_experiment_iterations = 30
-    processed_pkts_per_iteration = 100
-    packet_size = ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC
-    tx_interface = "vale113:01"
-    rx_interface = "vale116:01"
+def parse_arguments():
+    parser = argparse.ArgumentParser(
+        description="Your script's description here")
 
-    all_metrics = run_experiment(total_experiment_iterations=total_experiment_iterations,
-                                 tx_interface=tx_interface,
-                                 rx_interface=rx_interface,
-                                 processed_pkts_per_iteration=processed_pkts_per_iteration,
-                                 pkt_size=packet_size)
+    parser.add_argument("-it", "--iterations", type=int,
+                        default=30, help="Total iterations of the experiment")
+    parser.add_argument("-n", "--pkts-per-iteration", type=int,
+                        default=100, help="Total amount of processed packets per iteration")
+    parser.add_argument("-s", "--pkt-size", type=int,
+                        default=ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC, help="Packet size")
+    parser.add_argument("-txi", "--tx-interface",
+                        type=str, help="TX interface")
+    parser.add_argument("-txr", "--rx-interface",
+                        type=str, help="RX interface")
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_arguments()
+
+    all_metrics = run_experiment(total_experiment_iterations=args.iterations,
+                                 tx_interface=args.tx_interface,
+                                 rx_interface=args.rx_interface,
+                                 processed_pkts_per_iteration=args.pkts_per_iteration,
+                                 pkt_size=args.pkt_size)
 
     packets_per_sec_data, speed_units, throughput_data, throughput_units, average_batch_data = dump_metrics_into_csv(
         all_metrics)
