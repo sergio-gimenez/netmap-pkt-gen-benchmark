@@ -46,7 +46,10 @@ def parse_output(output: str):
 
 
 def dump_metrics_into_csv(all_metrics: list, pkt_size: int = ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC, parallel_id: Optional[int] = None):
-    csv_file = 'pkt_gen_metrics_{}_{}.csv'.format(parallel_id, pkt_size)
+    if parallel_id is None:
+        csv_file = 'pkt_gen_metrics_{}.csv'.format(pkt_size)
+    else:
+        csv_file = 'pkt_gen_metrics_{}_{}.csv'.format(parallel_id, pkt_size)
 
     # Extract units from the first metric (assuming all metrics have the same units)
     speed_units = all_metrics[0]['speed_units']
@@ -124,6 +127,8 @@ def parse_arguments():
                         type=str, help="TX interface")
     parser.add_argument("-txr", "--rx-interface",
                         type=str, help="RX interface")
+    parser.add_argument("-p", "--parallel-id", type=int,
+                        default=None, help="Parallel ID")
 
     return parser.parse_args()
 
