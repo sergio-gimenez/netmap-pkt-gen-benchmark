@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 
 import logger
 log = logger.setup_logger(file_name='pkt_gen_benchmark.log')
+log.setLevel(logger.logging.DEBUG)
+
+ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC = 60
 
 
 def run_pkt_gen_rx(interface: str, num_packets: int):
@@ -15,8 +18,9 @@ def run_pkt_gen_rx(interface: str, num_packets: int):
     return result.stdout
 
 
-def run_pkt_gen_tx(interface: str):
-    cmd = ['sudo', 'pkt-gen', '-i', interface, '-f', 'tx']
+def run_pkt_gen_tx(interface: str, pkt_size: int = ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC):
+    cmd = ['sudo', 'pkt-gen', '-i', interface, '-f', '-l', str(
+        pkt_size), '-f', 'tx']
     pkt_gen_tx_pid = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                       stderr=subprocess.PIPE, text=True)
     return pkt_gen_tx_pid
@@ -37,13 +41,18 @@ def parse_output(output):
     return metrics
 
 
-def run_experiment(total_experiment_iterations: int, tx_interface: str, rx_interface: str,  processed_pkts_per_iteration: int):
+def run_experiment(total_experiment_iterations: int,
+                   tx_interface: str,
+                   rx_interface: str,
+                   processed_pkts_per_iteration: int,
+                   pkt_size: int = ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC):
     all_metrics = []
-    pkt_gen_tx_pid = run_pkt_gen_tx(tx_interface)
+    pkt_gen_tx_pid = run_pkt_gen_tx(interface=tx_interface, pkt_size=pkt_size)
     for _ in range(total_experiment_iterations):
         log.info("Running iteration number {}".format(_))
         output = run_pkt_gen_rx(interface=rx_interface,
                                 num_packets=processed_pkts_per_iteration)
+        log.debug(output)
         metrics = parse_output(output)
         log.info(metrics)
         all_metrics.append(metrics)
@@ -51,8 +60,8 @@ def run_experiment(total_experiment_iterations: int, tx_interface: str, rx_inter
     return all_metrics
 
 
-def dump_metrics_into_csv(all_metrics):
-    csv_file = 'pkt_gen_metrics.csv'
+def dump_metrics_into_csv(all_metrics, pkt_size=ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC):
+    csv_file = 'pkt_gen_metrics_{}.csv'.format(pkt_size)
 
     # Write the metrics to the CSV file
     with open(csv_file, mode='w', newline='') as file:
@@ -89,7 +98,7 @@ def draw_plots_in_pdf(packets_per_sec_data, throughput_data, average_batch_data)
 
 
 def main():
-    total_experiment_iterations = 30  # Number of times to run pkt-gen
+    total_experiment_iterations = 10  # Number of times to run pkt-gen
     processed_pkts_per_iteration = 100
     tx_interface = "vale113:01"
     rx_interface = "vale116:01"
@@ -102,7 +111,8 @@ def main():
     packets_per_sec_data, throughput_data, average_batch_data = dump_metrics_into_csv(
         all_metrics)
 
-    draw_plots_in_pdf(packets_per_sec_data, throughput_data, average_batch_data)
+    draw_plots_in_pdf(packets_per_sec_data,
+                      throughput_data, average_batch_data)
 
 
 if __name__ == "__main__":
