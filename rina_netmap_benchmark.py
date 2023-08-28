@@ -2,6 +2,7 @@ import argparse
 import subprocess
 import re
 import csv
+from typing import Optional
 import matplotlib.pyplot as plt
 
 import logger
@@ -31,7 +32,7 @@ def kill_pkt_gen_tx(pkt_gen_tx_pid):
     pkt_gen_tx_pid.kill()
 
 
-def parse_output(output):
+def parse_output(output: str):
     metrics = {}
     speed_match = re.search(r'Speed: (\d+\.\d+) (\w+)pps', output)
     throughput_match = re.search(r'Bandwidth: (\d+\.\d+) (\w+)', output)
@@ -44,27 +45,8 @@ def parse_output(output):
     return metrics
 
 
-def run_experiment(total_experiment_iterations: int,
-                   tx_interface: str,
-                   rx_interface: str,
-                   processed_pkts_per_iteration: int,
-                   pkt_size: int = ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC):
-    all_metrics = []
-    pkt_gen_tx_pid = run_pkt_gen_tx(interface=tx_interface, pkt_size=pkt_size)
-    for _ in range(total_experiment_iterations):
-        log.info("Running iteration number {}".format(_))
-        output = run_pkt_gen_rx(interface=rx_interface,
-                                num_packets=processed_pkts_per_iteration)
-        log.debug(output)
-        metrics = parse_output(output)
-        log.info(metrics)
-        all_metrics.append(metrics)
-    kill_pkt_gen_tx(pkt_gen_tx_pid)
-    return all_metrics
-
-
-def dump_metrics_into_csv(all_metrics, pkt_size=ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC):
-    csv_file = 'pkt_gen_metrics_{}.csv'.format(pkt_size)
+def dump_metrics_into_csv(all_metrics: list, pkt_size: int = ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC, parallel_id: Optional[int] = None):
+    csv_file = 'pkt_gen_metrics_{}_{}.csv'.format(parallel_id, pkt_size)
 
     # Extract units from the first metric (assuming all metrics have the same units)
     speed_units = all_metrics[0]['speed_units']
@@ -86,6 +68,29 @@ def dump_metrics_into_csv(all_metrics, pkt_size=ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC
                           for metrics in all_metrics]
 
     return packets_per_sec_data, speed_units, throughput_data, throughput_units, average_batch_data
+
+
+def run_experiment(total_experiment_iterations: int,
+                   tx_interface: str,
+                   rx_interface: str,
+                   processed_pkts_per_iteration: int,
+                   pkt_size: int = ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC,
+                   parallel_id: Optional[int] = None):
+    all_metrics = []
+    pkt_gen_tx_pid = run_pkt_gen_tx(interface=tx_interface, pkt_size=pkt_size)
+    for _ in range(total_experiment_iterations):
+        log.info("Running iteration number {}".format(_))
+        output = run_pkt_gen_rx(interface=rx_interface,
+                                num_packets=processed_pkts_per_iteration)
+        log.debug(output)
+        metrics = parse_output(output)
+        log.info(metrics)
+        all_metrics.append(metrics)
+    kill_pkt_gen_tx(pkt_gen_tx_pid)
+    metrics = dump_metrics_into_csv(all_metrics=all_metrics,
+                                    pkt_size=pkt_size,
+                                    parallel_id=parallel_id)
+    return metrics
 
 
 def draw_plots_in_pdf(packets_per_sec_data, speed_units, throughput_data, throughput_units, average_batch_data):
@@ -125,18 +130,18 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
+    metrics = run_experiment(total_experiment_iterations=args.iterations,
+                             tx_interface=args.tx_interface,
+                             rx_interface=args.rx_interface,
+                             processed_pkts_per_iteration=args.pkts_per_iteration,
+                             pkt_size=args.pkt_size)
 
-    all_metrics = run_experiment(total_experiment_iterations=args.iterations,
-                                 tx_interface=args.tx_interface,
-                                 rx_interface=args.rx_interface,
-                                 processed_pkts_per_iteration=args.pkts_per_iteration,
-                                 pkt_size=args.pkt_size)
-
-    packets_per_sec_data, speed_units, throughput_data, throughput_units, average_batch_data = dump_metrics_into_csv(
-        all_metrics)
-
-    draw_plots_in_pdf(packets_per_sec_data, speed_units,
-                      throughput_data, throughput_units, average_batch_data)
+    packets_per_sec_data, speed_units, throughput_data, throughput_units, average_batch_data = metrics
+    draw_plots_in_pdf(packets_per_sec_data,
+                      speed_units,
+                      throughput_data,
+                      throughput_units,
+                      average_batch_data)
 
 
 if __name__ == "__main__":
