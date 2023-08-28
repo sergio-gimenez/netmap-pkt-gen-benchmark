@@ -1,8 +1,6 @@
 import subprocess
 import re
 import csv
-import threading
-from typing import Optional
 import matplotlib.pyplot as plt
 
 import logger
