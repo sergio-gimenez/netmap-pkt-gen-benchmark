@@ -127,6 +127,8 @@ def parse_arguments():
                         type=str, help="TX interface")
     parser.add_argument("-txr", "--rx-interface",
                         type=str, help="RX interface")
+    parser.add_argument("-d", "--draw-plots", action="store_true", default=False,
+                        help="Draw plots in a PDF file")
     parser.add_argument("-p", "--parallel-id", type=int,
                         default=None, help="Parallel ID")
 
@@ -139,14 +141,16 @@ def main():
                              tx_interface=args.tx_interface,
                              rx_interface=args.rx_interface,
                              processed_pkts_per_iteration=args.pkts_per_iteration,
-                             pkt_size=args.pkt_size)
+                             pkt_size=args.pkt_size,
+                             parallel_id=args.parallel_id)
 
-    packets_per_sec_data, speed_units, throughput_data, throughput_units, average_batch_data = metrics
-    draw_plots_in_pdf(packets_per_sec_data,
-                      speed_units,
-                      throughput_data,
-                      throughput_units,
-                      average_batch_data)
+    if args.draw_plots:
+        packets_per_sec_data, speed_units, throughput_data, throughput_units, average_batch_data = metrics
+        draw_plots_in_pdf(packets_per_sec_data,
+                          speed_units,
+                          throughput_data,
+                          throughput_units,
+                          average_batch_data)
 
 
 if __name__ == "__main__":
