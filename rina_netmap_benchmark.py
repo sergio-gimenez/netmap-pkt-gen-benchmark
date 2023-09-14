@@ -3,6 +3,7 @@ import subprocess
 import re
 import csv
 from typing import Optional
+import uuid
 import matplotlib.pyplot as plt
 
 import logger
@@ -47,9 +48,10 @@ def parse_output(output: str):
 
 def dump_metrics_into_csv(all_metrics: list, pkt_size: int = ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC, parallel_id: Optional[int] = None):
     if parallel_id is None:
-        csv_file = 'pkt_gen_metrics_{}.csv'.format(pkt_size)
+        csv_file = '{}_pkt_gen_metrics_{}.csv'.format(uuid.uuid4(), pkt_size)
     else:
-        csv_file = 'pkt_gen_metrics_{}_{}.csv'.format(parallel_id, pkt_size)
+        csv_file = '{}_pkt_gen_metrics_{}_{}.csv'.format(
+            uuid.uuid4(), parallel_id, pkt_size)
 
     # Extract units from the first metric (assuming all metrics have the same units)
     speed_units = all_metrics[0]['speed_units']
