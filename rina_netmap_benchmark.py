@@ -24,8 +24,7 @@ def run_pkt_gen_rx(interface: str, num_packets: int):
 def run_pkt_gen_tx(interface: str, pkt_size: int = ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC):
     cmd = ['sudo', 'pkt-gen', '-i', interface, '-f', '-l', str(
         pkt_size), '-f', 'tx']
-    pkt_gen_tx_pid = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE, text=True)
+    pkt_gen_tx_pid = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     return pkt_gen_tx_pid
 
 
@@ -41,8 +40,7 @@ def parse_output(output: str):
     metrics['speed_units'] = speed_match.group(2)
     metrics['throughput'] = throughput_match.group(1)
     metrics['throughput_units'] = throughput_match.group(2)
-    metrics['average_batch'] = re.search(
-        r'Average batch: (\d+\.\d+) pkts', output).group(1)
+    metrics['average_batch'] = re.search(r'Average batch: (\d+\.\d+) pkts', output).group(1)
     return metrics
 
 
@@ -50,8 +48,7 @@ def dump_metrics_into_csv(all_metrics: list, pkt_size: int = ETH_MINIMUM_PKT_SIZ
     if parallel_id is None:
         csv_file = '{}_pkt_gen_metrics_{}.csv'.format(uuid.uuid4(), pkt_size)
     else:
-        csv_file = '{}_pkt_gen_metrics_{}_{}.csv'.format(
-            uuid.uuid4(), parallel_id, pkt_size)
+        csv_file = '{}_pkt_gen_metrics_{}_{}.csv'.format(uuid.uuid4(), parallel_id, pkt_size)
 
     # Extract units from the first metric (assuming all metrics have the same units)
     speed_units = all_metrics[0]['speed_units']
@@ -59,18 +56,15 @@ def dump_metrics_into_csv(all_metrics: list, pkt_size: int = ETH_MINIMUM_PKT_SIZ
 
    # Write the metrics to the CSV file
     with open(csv_file, mode='w', newline='') as file:
-        fieldnames = ['packets_per_sec', 'speed_units',
-                      'throughput', 'throughput_units', 'average_batch']
+        fieldnames = ['packets_per_sec', 'speed_units', 'throughput', 'throughput_units', 'average_batch']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(all_metrics)
 
     # Extract data for plotting
-    packets_per_sec_data = [float(metrics['packets_per_sec'])
-                            for metrics in all_metrics]
+    packets_per_sec_data = [float(metrics['packets_per_sec']) for metrics in all_metrics]
     throughput_data = [float(metrics['throughput']) for metrics in all_metrics]
-    average_batch_data = [float(metrics['average_batch'])
-                          for metrics in all_metrics]
+    average_batch_data = [float(metrics['average_batch']) for metrics in all_metrics]
 
     return packets_per_sec_data, speed_units, throughput_data, throughput_units, average_batch_data
 
@@ -85,16 +79,13 @@ def run_experiment(total_experiment_iterations: int,
     pkt_gen_tx_pid = run_pkt_gen_tx(interface=tx_interface, pkt_size=pkt_size)
     for _ in range(total_experiment_iterations):
         log.info("Running iteration number {}".format(_))
-        output = run_pkt_gen_rx(interface=rx_interface,
-                                num_packets=processed_pkts_per_iteration)
+        output = run_pkt_gen_rx(interface=rx_interface, num_packets=processed_pkts_per_iteration)
         log.debug(output)
         metrics = parse_output(output)
         log.info(metrics)
         all_metrics.append(metrics)
     kill_pkt_gen_tx(pkt_gen_tx_pid)
-    metrics = dump_metrics_into_csv(all_metrics=all_metrics,
-                                    pkt_size=pkt_size,
-                                    parallel_id=parallel_id)
+    metrics = dump_metrics_into_csv(all_metrics=all_metrics, pkt_size=pkt_size, parallel_id=parallel_id)
     return metrics
 
 
@@ -119,20 +110,14 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Your script's description here")
 
-    parser.add_argument("-it", "--iterations", type=int,
-                        default=30, help="Total iterations of the experiment")
-    parser.add_argument("-n", "--pkts-per-iteration", type=int,
-                        default=100, help="Total amount of processed packets per iteration")
-    parser.add_argument("-s", "--pkt-size", type=int,
-                        default=ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC, help="Packet size")
-    parser.add_argument("-txi", "--tx-interface",
-                        type=str, help="TX interface")
-    parser.add_argument("-txr", "--rx-interface",
-                        type=str, help="RX interface")
-    parser.add_argument("-d", "--draw-plots", action="store_true", default=False,
-                        help="Draw plots in a PDF file")
-    parser.add_argument("-p", "--parallel-id", type=int,
-                        default=None, help="Parallel ID")
+    parser.add_argument("-it", "--iterations", type=int, default=30, help="Total iterations of the experiment")
+    parser.add_argument("-n", "--pkts-per-iteration", type=int, default=100,
+                        help="Total amount of processed packets per iteration")
+    parser.add_argument("-s", "--pkt-size", type=int, default=ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC, help="Packet size")
+    parser.add_argument("-txi", "--tx-interface", type=str, help="TX interface")
+    parser.add_argument("-txr", "--rx-interface", type=str, help="RX interface")
+    parser.add_argument("-d", "--draw-plots", action="store_true", default=False, help="Draw plots in a PDF file")
+    parser.add_argument("-p", "--parallel-id", type=int, default=None, help="Parallel ID")
 
     return parser.parse_args()
 
@@ -148,11 +133,7 @@ def main():
 
     if args.draw_plots:
         packets_per_sec_data, speed_units, throughput_data, throughput_units, average_batch_data = metrics
-        draw_plots_in_pdf(packets_per_sec_data,
-                          speed_units,
-                          throughput_data,
-                          throughput_units,
-                          average_batch_data)
+        draw_plots_in_pdf(packets_per_sec_data, speed_units, throughput_data, throughput_units, average_batch_data)
 
 
 if __name__ == "__main__":
