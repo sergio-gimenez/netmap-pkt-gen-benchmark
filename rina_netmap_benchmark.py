@@ -110,7 +110,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Your script's description here")
 
-    parser.add_argument("-it", "--iterations", type=int, default=30, help="Total iterations of the experiment")
+    parser.add_argument("-it", "--iterations", type=int, default=1, help="Total iterations of the experiment")
     parser.add_argument("-n", "--pkts-per-iteration", type=int, default=100,
                         help="Total amount of processed packets per iteration")
     parser.add_argument("-s", "--pkt-size", type=int, default=ETH_MINIMUM_PKT_SIZE_WITHOUT_CRC, help="Packet size")
@@ -122,7 +122,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def main():
+def main():   
     args = parse_arguments()
     metrics = run_experiment(total_experiment_iterations=args.iterations,
                              tx_interface=args.tx_interface,
